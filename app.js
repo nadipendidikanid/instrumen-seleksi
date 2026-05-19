@@ -506,6 +506,65 @@ function renderHasil(total, sertScore, portoScore, kompScore, validSerts, totalD
       <span class="font-semibold text-slate-800">${v}</span>
     </div>
   `).join('');
+
+  // ─── Capture data untuk API save ────────────────────────
+  const recTexts = [];
+  if (sertScore < 10)  recTexts.push('Lengkapi SKK minimal tingkat Ahli Muda dari LPJK/BNSP.');
+  if (sertScore >= 20) recTexts.push('Sertifikasi sudah memadai. Pertahankan dengan pembaruan berkala.');
+  if (portoScore < 10) recTexts.push('Perbanyak pengalaman proyek sebagai Supervisor atau Project Manager.');
+  if (kompScore < 10)  recTexts.push('Tingkatkan penguasaan kompetensi teknis pada bidang inti keahlian.');
+  if (kompScore >= 25) recTexts.push('Kompetensi teknis sangat baik dan beragam.');
+  if (total >= 70)     recTexts.push('Direkomendasikan untuk penugasan proyek sesuai bidang keahlian.');
+  if (total < 50)      recTexts.push('Disarankan mengikuti program pelatihan sebelum penugasan proyek.');
+
+  const sertifikatData = [];
+  document.querySelectorAll('#sertifikat-list > div').forEach(row => {
+    const n = row.querySelector('.sert-nama')?.value?.trim() || '';
+    const t = row.querySelector('.sert-tingkat')?.value || '';
+    const p = row.querySelector('.sert-penerbit')?.value?.trim() || '';
+    const y = row.querySelector('.sert-tahun')?.value || '';
+    if (n) sertifikatData.push({ nama: n, tingkat: t, penerbit: p, tahun: y });
+  });
+
+  const portofolioData = [];
+  document.querySelectorAll('#portofolio-list > div').forEach(row => {
+    const n  = row.querySelector('.porto-nama')?.value?.trim() || '';
+    const pr = row.querySelector('.porto-peran')?.value || '';
+    const j  = row.querySelector('.porto-jenis')?.value || '';
+    const v  = row.querySelector('.porto-nilai')?.value || '';
+    const m  = row.querySelector('.porto-mulai')?.value || '';
+    const s  = row.querySelector('.porto-selesai')?.value || '';
+    if (n) portofolioData.push({ nama: n, peran: pr, jenis: j, nilai: v, mulai: m, selesai: s });
+  });
+
+  const kompetensiSipil = [];
+  const kompetensiArsi  = [];
+  document.querySelectorAll('.comp-check:checked').forEach(chk => {
+    const lbl = chk.nextElementSibling?.querySelector('span.flex-1')?.textContent?.trim() || '';
+    if (chk.dataset.category === 'arsitektur') kompetensiArsi.push(lbl);
+    else kompetensiSipil.push(lbl);
+  });
+
+  lastScoreData = {
+    nama:             document.getElementById('nama').value       || '',
+    nik:              document.getElementById('nik').value        || '',
+    bidang:           document.getElementById('bidang').value     || '',
+    jabatan:          document.getElementById('jabatan').value    || '',
+    pendidikan:       document.getElementById('pendidikan').value || '',
+    tahun_kerja:      document.getElementById('tahun_kerja').value|| '',
+    institusi:        document.getElementById('institusi').value  || '',
+    email:            document.getElementById('email').value      || '',
+    skor_total:       total,
+    skor_sertifikat:  Math.round(sertScore),
+    skor_portofolio:  Math.round(portoScore),
+    skor_kompetensi:  Math.round(kompScore),
+    status_kelayakan: total >= 70 ? 'LAYAK' : total >= 50 ? 'PERLU EVALUASI' : 'TIDAK LAYAK',
+    sertifikat:       sertifikatData,
+    portofolio:       portofolioData,
+    kompetensi:       { sipil: kompetensiSipil, arsitektur: kompetensiArsi },
+    rekomendasi:      recTexts,
+    tanggal_penilaian: new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }),
+  };
 }
 
 // ─── EXPORT WORD ─────────────────────────────────────────────
@@ -948,69 +1007,7 @@ function resetForm() {
 }
 
 // ─── SAVE TO DATABASE & SEND EMAIL ──────────────────────────
-// Holds the last computed score data so savePenilaian() can use it
 let lastScoreData = null;
-
-// Override renderHasil to also capture score data
-const _origRenderHasil = renderHasil;
-function renderHasil(total, sertScore, portoScore, kompScore, validSerts, totalDuration) {
-  _origRenderHasil(total, sertScore, portoScore, kompScore, validSerts, totalDuration);
-
-  // Capture score data for later API call
-  const recs = [];
-  if (sertScore < 10)  recs.push('Lengkapi SKK minimal tingkat Ahli Muda dari LPJK/BNSP.');
-  if (sertScore >= 20) recs.push('Sertifikasi sudah memadai. Pertahankan dengan pembaruan berkala.');
-  if (portoScore < 10) recs.push('Perbanyak pengalaman proyek sebagai Supervisor atau Project Manager.');
-  if (kompScore < 10)  recs.push('Tingkatkan penguasaan kompetensi teknis pada bidang inti keahlian.');
-  if (kompScore >= 25) recs.push('Kompetensi teknis sangat baik dan beragam.');
-  if (total >= 70)     recs.push('Direkomendasikan untuk penugasan proyek sesuai bidang keahlian.');
-  if (total < 50)      recs.push('Disarankan mengikuti program pelatihan sebelum penugasan proyek.');
-
-  const sertifikatData = [];
-  document.querySelectorAll('#sertifikat-list > div').forEach(row => {
-    const nama    = row.querySelector('.sert-nama')?.value?.trim() || '';
-    const tingkat = row.querySelector('.sert-tingkat')?.value || '';
-    const penerbit= row.querySelector('.sert-penerbit')?.value?.trim() || '';
-    const tahun   = row.querySelector('.sert-tahun')?.value || '';
-    if (nama) sertifikatData.push({ nama, tingkat, penerbit, tahun });
-  });
-
-  const portofolioData = [];
-  document.querySelectorAll('#portofolio-list > div').forEach(row => {
-    const nama  = row.querySelector('.porto-nama')?.value?.trim() || '';
-    const peran = row.querySelector('.porto-peran')?.value || '';
-    const jenis = row.querySelector('.porto-jenis')?.value || '';
-    const nilai = row.querySelector('.porto-nilai')?.value || '';
-    const mulai = row.querySelector('.porto-mulai')?.value || '';
-    const selesai=row.querySelector('.porto-selesai')?.value || '';
-    if (nama) portofolioData.push({ nama, peran, jenis, nilai, mulai, selesai });
-  });
-
-  const kompetensiData = [];
-  document.querySelectorAll('.comp-check:checked').forEach(chk => {
-    kompetensiData.push({ nama: chk.dataset.nama || chk.value, bobot: chk.dataset.bobot || '1' });
-  });
-
-  lastScoreData = {
-    nama:       document.getElementById('nama').value      || '',
-    nik:        document.getElementById('nik').value       || '',
-    bidang:     document.getElementById('bidang').value    || '',
-    jabatan:    document.getElementById('jabatan').value   || '',
-    pendidikan: document.getElementById('pendidikan').value|| '',
-    tahun_kerja:document.getElementById('tahun_kerja').value|| '',
-    institusi:  document.getElementById('institusi').value || '',
-    email:      document.getElementById('email').value     || '',
-    skor_total:       total,
-    skor_sertifikat:  Math.round(sertScore),
-    skor_portofolio:  Math.round(portoScore),
-    skor_kompetensi:  Math.round(kompScore),
-    status_kelayakan: total >= 70 ? 'LAYAK' : total >= 50 ? 'PERLU EVALUASI' : 'TIDAK LAYAK',
-    sertifikat:  sertifikatData,
-    portofolio:  portofolioData,
-    kompetensi:  kompetensiData,
-    rekomendasi: recs,
-  };
-}
 
 async function savePenilaian() {
   const emailInput = document.getElementById('email-kirim');
