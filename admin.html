@@ -28,10 +28,17 @@
         <p class="text-slate-400 text-xs">Manajemen Data Penilaian Tenaga Ahli Konstruksi</p>
       </div>
     </div>
-    <a href="index.html" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-medium transition">
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-      Buat Penilaian Baru
-    </a>
+    <div class="flex items-center gap-2 flex-wrap">
+      <span id="admin-greeting" class="text-slate-400 text-xs hidden"></span>
+      <a href="index.html" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-medium transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Buat Penilaian Baru
+      </a>
+      <button onclick="doLogout()" class="flex items-center gap-2 bg-red-500/20 hover:bg-red-500/40 text-red-200 hover:text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        Logout
+      </button>
+    </div>
   </div>
 </header>
 
@@ -125,9 +132,43 @@
 const API = '/api';
 let allData = [];
 
+// ─── AUTH ─────────────────────────────────────────────────────
+const adminToken = sessionStorage.getItem('admin_token');
+const adminUser  = sessionStorage.getItem('admin_user');
+
+// Redirect ke login jika belum punya token
+if (!adminToken) { window.location.href = 'login.html'; }
+
+// Tampilkan greeting di header
+document.addEventListener('DOMContentLoaded', () => {
+  const greet = document.getElementById('admin-greeting');
+  if (greet && adminUser) { greet.textContent = '👤 ' + adminUser; greet.classList.remove('hidden'); }
+});
+
+// Helper: fetch dengan token header
+function authFetch(url, options = {}) {
+  return fetch(url, {
+    ...options,
+    headers: { ...(options.headers || {}), 'x-admin-token': adminToken, 'Content-Type': 'application/json' },
+  });
+}
+
+async function doLogout() {
+  if (!confirm('Yakin ingin logout?')) return;
+  try { await authFetch(`${API}/logout`, { method: 'POST' }); } catch(e) {}
+  sessionStorage.removeItem('admin_token');
+  sessionStorage.removeItem('admin_user');
+  window.location.href = 'login.html';
+}
+
 async function loadData() {
   try {
-    const res  = await fetch(`${API}/data`);
+    const res  = await authFetch(`${API}/data`);
+    if (res.status === 401) {
+      sessionStorage.removeItem('admin_token');
+      window.location.href = 'login.html';
+      return;
+    }
     const json = await res.json();
     allData = json.data || [];
     renderStats(allData);
@@ -200,7 +241,7 @@ function filterTable() {
 
 async function showDetail(id) {
   try {
-    const res  = await fetch(`${API}/data/${id}`);
+    const res  = await authFetch(`${API}/data/${id}`);
     const json = await res.json();
     const d    = json.data;
     const sertArr  = JSON.parse(d.sertifikat_json  || '[]');
@@ -247,7 +288,7 @@ function closeModal() {
 async function kirimEmail(id) {
   showToast('Mengirim email...', 'info');
   try {
-    const res  = await fetch(`${API}/kirim-email/${id}`, { method:'POST' });
+    const res  = await authFetch(`${API}/kirim-email/${id}`, { method:'POST' });
     const json = await res.json();
     if (json.success) {
       showToast('✅ Email berhasil dikirim!', 'success');
@@ -265,7 +306,7 @@ async function kirimEmail(id) {
 async function hapusData(id) {
   if (!confirm(`Hapus data penilaian #${id}?`)) return;
   try {
-    await fetch(`${API}/data/${id}`, { method:'DELETE' });
+    await authFetch(`${API}/data/${id}`, { method:'DELETE' });
     showToast('Data berhasil dihapus', 'success');
     loadData();
   } catch(e) {

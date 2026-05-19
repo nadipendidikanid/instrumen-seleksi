@@ -8,9 +8,42 @@ const bodyParser = require('body-parser');
 const path       = require('path');
 const nodemailer = require('nodemailer');
 const Database   = require('better-sqlite3');
+const crypto     = require('crypto');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
+
+// ─── KONFIGURASI ADMIN ────────────────────────────────────────
+// Ubah username & password sesuai kebutuhan, atau gunakan env variable
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Admin@2025';
+
+// Simple in-memory token store (berlaku selama server hidup)
+const activeSessions = new Map(); // token -> { username, createdAt }
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 jam
+
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function isValidToken(token) {
+  if (!token || !activeSessions.has(token)) return false;
+  const session = activeSessions.get(token);
+  if (Date.now() - session.createdAt > SESSION_TTL_MS) {
+    activeSessions.delete(token);
+    return false;
+  }
+  return true;
+}
+
+// ─── MIDDLEWARE AUTH ──────────────────────────────────────────
+function requireAuth(req, res, next) {
+  const token = req.headers['x-admin-token'] || req.query.token;
+  if (!isValidToken(token)) {
+    return res.status(401).json({ success: false, error: 'Unauthorized. Silakan login terlebih dahulu.' });
+  }
+  next();
+}
 
 // ─── MIDDLEWARE ───────────────────────────────────────────────
 app.use(cors());
@@ -46,23 +79,35 @@ db.exec(`
 `);
 
 // ─── EMAIL TRANSPORTER ────────────────────────────────────────
-// Menggunakan Ethereal (test SMTP) — ganti dengan SMTP asli di produksi
 let transporter = null;
 
 async function getTransporter() {
   if (transporter) return transporter;
-  // Buat akun test Ethereal otomatis
-  const testAccount = await nodemailer.createTestAccount();
-  transporter = nodemailer.createTransport({
-    host:   'smtp.ethereal.email',
-    port:   587,
-    secure: false,
-    auth: {
-      user: testAccount.user,
-      pass: testAccount.pass,
-    },
-  });
-  console.log('📧 Ethereal test email siap:', testAccount.user);
+  // Gunakan SMTP dari env variable jika tersedia, fallback ke Ethereal test
+  if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
+    transporter = nodemailer.createTransport({
+      host:   process.env.SMTP_HOST,
+      port:   parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+    console.log('📧 SMTP produksi siap:', process.env.SMTP_HOST);
+  } else {
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+      host:   'smtp.ethereal.email',
+      port:   587,
+      secure: false,
+      auth: {
+        user: testAccount.user,
+        pass: testAccount.pass,
+      },
+    });
+    console.log('📧 Ethereal test email siap:', testAccount.user);
+  }
   return transporter;
 }
 
@@ -207,7 +252,43 @@ function buildEmailHTML(data) {
 </body></html>`;
 }
 
-// ─── API: SIMPAN PENILAIAN ────────────────────────────────────
+// ─── API: LOGIN ───────────────────────────────────────────────
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) {
+    return res.status(400).json({ success: false, message: 'Username dan password wajib diisi.' });
+  }
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    const token = generateToken();
+    activeSessions.set(token, { username, createdAt: Date.now() });
+    console.log(`🔐 Login berhasil: ${username} | Token: ${token.substring(0,8)}...`);
+    return res.json({ success: true, token, username });
+  }
+  console.log(`⚠️  Login gagal: username="${username}"`);
+  return res.status(401).json({ success: false, message: 'Username atau password salah.' });
+});
+
+// ─── API: LOGOUT ──────────────────────────────────────────────
+app.post('/api/logout', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (token && activeSessions.has(token)) {
+    activeSessions.delete(token);
+    console.log(`🔓 Logout: token ${token.substring(0,8)}...`);
+  }
+  res.json({ success: true, message: 'Logout berhasil.' });
+});
+
+// ─── API: CEK TOKEN (untuk validasi session) ──────────────────
+app.get('/api/auth-check', (req, res) => {
+  const token = req.headers['x-admin-token'];
+  if (isValidToken(token)) {
+    const session = activeSessions.get(token);
+    return res.json({ success: true, username: session.username });
+  }
+  res.status(401).json({ success: false, message: 'Session tidak valid atau sudah expired.' });
+});
+
+// ─── API: SIMPAN PENILAIAN (publik — tidak perlu auth) ────────
 app.post('/api/simpan', async (req, res) => {
   try {
     const d = req.body;
@@ -275,8 +356,8 @@ app.post('/api/simpan', async (req, res) => {
   }
 });
 
-// ─── API: AMBIL SEMUA DATA ────────────────────────────────────
-app.get('/api/data', (req, res) => {
+// ─── API: AMBIL SEMUA DATA (🔒 perlu auth) ───────────────────
+app.get('/api/data', requireAuth, (req, res) => {
   try {
     const rows = db.prepare(`
       SELECT id, nama, nik, bidang, jabatan, pendidikan, tahun_kerja, institusi, email,
@@ -290,8 +371,8 @@ app.get('/api/data', (req, res) => {
   }
 });
 
-// ─── API: DETAIL DATA ─────────────────────────────────────────
-app.get('/api/data/:id', (req, res) => {
+// ─── API: DETAIL DATA (🔒 perlu auth) ────────────────────────
+app.get('/api/data/:id', requireAuth, (req, res) => {
   try {
     const row = db.prepare('SELECT * FROM penilaian WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Data tidak ditemukan' });
@@ -301,8 +382,8 @@ app.get('/api/data/:id', (req, res) => {
   }
 });
 
-// ─── API: DELETE DATA ─────────────────────────────────────────
-app.delete('/api/data/:id', (req, res) => {
+// ─── API: DELETE DATA (🔒 perlu auth) ────────────────────────
+app.delete('/api/data/:id', requireAuth, (req, res) => {
   try {
     db.prepare('DELETE FROM penilaian WHERE id = ?').run(req.params.id);
     res.json({ success: true });
@@ -311,8 +392,8 @@ app.delete('/api/data/:id', (req, res) => {
   }
 });
 
-// ─── API: KIRIM ULANG EMAIL ───────────────────────────────────
-app.post('/api/kirim-email/:id', async (req, res) => {
+// ─── API: KIRIM ULANG EMAIL (🔒 perlu auth) ──────────────────
+app.post('/api/kirim-email/:id', requireAuth, async (req, res) => {
   try {
     const row = db.prepare('SELECT * FROM penilaian WHERE id = ?').get(req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Data tidak ditemukan' });
@@ -341,4 +422,6 @@ app.post('/api/kirim-email/:id', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
   console.log(`📁 Database: ${path.join(__dirname, 'penilaian.db')}`);
+  console.log(`🔐 Admin: ${ADMIN_USERNAME} / ${ADMIN_PASSWORD}`);
+  console.log(`🔑 Login: http://localhost:${PORT}/login.html`);
 });
