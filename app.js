@@ -127,6 +127,42 @@ function updateStepIndicators(active) {
   }
 }
 
+// ─── VALIDASI STEP 1 ────────────────────────────────────────
+function clearError(fieldId) {
+  const el = document.getElementById(fieldId);
+  if (el) el.classList.remove('field-error');
+}
+
+function showError(fieldId) {
+  const el = document.getElementById(fieldId);
+  if (el) {
+    el.classList.add('field-error');
+    el.classList.remove('shake-error');
+    void el.offsetWidth;
+    el.classList.add('shake-error');
+    setTimeout(() => el.classList.remove('shake-error'), 400);
+  }
+}
+
+function validateStep1() {
+  const nama   = document.getElementById('nama').value.trim();
+  const nik    = document.getElementById('nik').value.trim();
+  const bidang = document.getElementById('bidang').value;
+
+  let valid = true;
+
+  if (!nama) { showError('field-nama');   valid = false; }
+  if (!nik)  { showError('field-nik');    valid = false; }
+  if (!bidang){ showError('field-bidang'); valid = false; }
+
+  if (!valid) {
+    // Scroll ke atas agar error terlihat
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  goTo(2);
+}
+
 // ─── TAB KOMPETENSI ─────────────────────────────────────────
 function switchTab(tab) {
   const tabs = ['sipil', 'arsitektur'];
@@ -565,6 +601,9 @@ function renderHasil(total, sertScore, portoScore, kompScore, validSerts, totalD
     rekomendasi:      recTexts,
     tanggal_penilaian: new Date().toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' }),
   };
+
+  // Auto-simpan ke backend (tanpa interaksi user)
+  savePenilaian();
 }
 
 // ─── EXPORT WORD ─────────────────────────────────────────────
@@ -1010,23 +1049,22 @@ function resetForm() {
 let lastScoreData = null;
 
 async function savePenilaian() {
-  const emailInput = document.getElementById('email-kirim');
-  const email = emailInput ? emailInput.value.trim() : (document.getElementById('email')?.value?.trim() || '');
+  if (!lastScoreData) return;
 
-  if (!lastScoreData) {
-    alert('Hitung skor terlebih dahulu sebelum menyimpan.');
-    return;
-  }
-  if (!email || !email.includes('@')) {
-    alert('Masukkan alamat email yang valid untuk mengirim hasil penilaian.');
-    if (emailInput) emailInput.focus();
-    return;
-  }
-
+  // Gunakan email dari form data diri (sudah diisi di step 1)
+  const email = lastScoreData.email || '';
   const payload = { ...lastScoreData, email };
 
-  const saveBtn = document.getElementById('btn-simpan');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Menyimpan...'; }
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) {
+    statusEl.innerHTML = `<div class="flex items-center gap-2 text-sm text-slate-500 py-2">
+      <svg class="w-4 h-4 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+      </svg>
+      Menyimpan hasil penilaian...
+    </div>`;
+  }
 
   try {
     const res = await fetch(`${API_BASE}/api/simpan`, {
@@ -1037,32 +1075,33 @@ async function savePenilaian() {
     const data = await res.json();
 
     if (res.ok && data.success) {
-      showSaveSuccess(email, data.emailPreview);
+      showSaveSuccess(email);
     } else {
-      alert('Gagal menyimpan: ' + (data.error || 'Server error'));
+      if (statusEl) statusEl.innerHTML = '';
+      console.warn('Gagal simpan:', data.error);
     }
   } catch (err) {
-    // If backend not reachable (static deployment), show offline notice
+    // Backend tidak tersedia - tetap tampilkan hasil tanpa notif error ke user
     console.warn('Backend tidak tersedia:', err);
-    alert('ℹ️ Mode offline: data tidak dapat disimpan ke server.\nGunakan tombol Export Word untuk menyimpan hasil secara lokal.');
-  } finally {
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = '💾 Simpan & Kirim Email'; }
+    if (statusEl) statusEl.innerHTML = '';
   }
 }
 
-function showSaveSuccess(email, previewUrl) {
+function showSaveSuccess(email) {
   const container = document.getElementById('save-status');
   if (!container) return;
+  const emailInfo = email && email.includes('@')
+    ? `<p class="text-sm text-green-700 mt-1">📧 Hasil penilaian telah dikirimkan ke <strong>${email}</strong></p>`
+    : '';
   container.innerHTML = `
-    <div class="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-800">
-      <div class="flex items-center gap-2 font-semibold mb-1">
-        <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        Data berhasil disimpan!
+    <div class="mt-2 p-4 bg-green-50 border border-green-200 rounded-xl text-green-800 flex items-start gap-3">
+      <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div>
+        <p class="font-semibold text-green-800">✅ Hasil penilaian berhasil disimpan!</p>
+        ${emailInfo}
+        <p class="text-xs text-green-600 mt-1">Data telah tercatat dan akan ditinjau oleh tim admin.</p>
       </div>
-      <p class="text-sm">Hasil penilaian telah dikirim ke <strong>${email}</strong>.</p>
-      ${previewUrl ? `<a href="${previewUrl}" target="_blank" class="text-xs text-green-700 underline mt-1 block">Lihat preview email (test) →</a>` : ''}
-    </div>
-  `;
+    </div>`;
 }

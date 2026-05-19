@@ -44,6 +44,26 @@
     .fade-in { animation: fadeIn .4s ease forwards; }
     .badge { display:inline-flex; align-items:center; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:600; }
     .print-btn { display:none; }
+    /* Validasi field wajib */
+    .field-error input, .field-error select {
+      border-color: #ef4444 !important;
+      background-color: #fff5f5 !important;
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important;
+    }
+    .field-error .error-msg {
+      display: block !important;
+    }
+    .error-msg {
+      display: none;
+      color: #ef4444;
+      font-size: 11px;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+    @keyframes errorShake {
+      0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)}
+    }
+    .shake-error { animation: errorShake .35s ease; }
     @media print {
       .no-print { display:none !important; }
       .print-area { display:block !important; }
@@ -120,22 +140,25 @@
         </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-        <div>
+        <div id="field-nama">
           <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
-          <input id="nama" type="text" placeholder="Masukkan nama lengkap" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+          <input id="nama" type="text" placeholder="Masukkan nama lengkap" oninput="clearError('field-nama')" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+          <span class="error-msg">⚠ Nama lengkap wajib diisi</span>
         </div>
-        <div>
+        <div id="field-nik">
           <label class="block text-sm font-semibold text-slate-700 mb-1.5">No. KTP / NIK <span class="text-red-500">*</span></label>
-          <input id="nik" type="text" maxlength="16" placeholder="16 digit NIK" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+          <input id="nik" type="text" maxlength="16" placeholder="16 digit NIK" oninput="clearError('field-nik')" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+          <span class="error-msg">⚠ NIK wajib diisi (16 digit)</span>
         </div>
-        <div>
+        <div id="field-bidang">
           <label class="block text-sm font-semibold text-slate-700 mb-1.5">Bidang Keahlian <span class="text-red-500">*</span></label>
-          <select id="bidang" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition bg-white">
+          <select id="bidang" onchange="clearError('field-bidang')" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition bg-white">
             <option value="">-- Pilih Bidang --</option>
             <option value="sipil">Teknik Sipil</option>
             <option value="arsitektur">Arsitektur</option>
             <option value="keduanya">Sipil & Arsitektur</option>
           </select>
+          <span class="error-msg">⚠ Bidang keahlian wajib dipilih</span>
         </div>
         <div>
           <label class="block text-sm font-semibold text-slate-700 mb-1.5">Jabatan / Posisi</label>
@@ -166,7 +189,7 @@
       </div>
     </div>
     <div class="flex justify-end">
-      <button onclick="goTo(2)" class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+      <button onclick="validateStep1()" class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
         Lanjut: SKK / Sertifikat
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
       </button>
@@ -478,31 +501,8 @@
       <div id="ringkasan-data" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm"></div>
     </div>
 
-    <!-- ── Simpan & Email Panel ── -->
-    <div class="no-print bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-4">
-      <h3 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
-        <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-        Simpan Hasil &amp; Kirim via Email
-      </h3>
-      <div class="flex flex-col sm:flex-row gap-3">
-        <input id="email-kirim" type="email" placeholder="Masukkan email penerima hasil penilaian..."
-          class="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition bg-white" />
-        <button id="btn-simpan" onclick="savePenilaian()"
-          class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 shadow whitespace-nowrap">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-          💾 Simpan &amp; Kirim Email
-        </button>
-      </div>
-      <div id="save-status"></div>
-      <p class="text-xs text-slate-400 mt-2">Data akan disimpan ke database dan hasil penilaian dikirim ke email yang dimasukkan.</p>
-    </div>
-
-    <!-- ── Admin Dashboard Link ── -->
-    <div class="no-print text-right mb-4">
-      <a href="admin.html" target="_blank" class="text-xs text-slate-400 hover:text-primary-600 underline transition">
-        🔧 Buka Admin Dashboard →
-      </a>
-    </div>
+    <!-- ── Status Simpan Otomatis ── -->
+    <div id="save-status" class="no-print mb-4"></div>
 
     <div class="flex flex-wrap justify-between gap-3 no-print">
       <button onclick="goTo(4)" class="border border-slate-300 text-slate-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
