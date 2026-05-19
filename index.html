@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instrumen Seleksi Tenaga Ahli Konstruksi</title>
+  <meta name="description" content="Platform penilaian kelayakan tenaga ahli konstruksi berbasis SKK, sertifikat, portofolio proyek, dan kompetensi bidang sipil maupun arsitektur." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            primary: { 50:'#eff6ff',100:'#dbeafe',200:'#bfdbfe',300:'#93c5fd',400:'#60a5fa',500:'#3b82f6',600:'#2563eb',700:'#1d4ed8',800:'#1e40af',900:'#1e3a8a' },
+            accent:  { 50:'#fff7ed',100:'#ffedd5',200:'#fed7aa',300:'#fdba74',400:'#fb923c',500:'#f97316',600:'#ea580c',700:'#c2410c' },
+            slate:   { 50:'#f8fafc',800:'#1e293b',900:'#0f172a' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .tab-btn.active  { background-color:#2563eb; color:#fff; border-color:#2563eb; }
+    .tab-btn         { transition: all .2s; }
+    .step-indicator.done   { background:#16a34a; color:#fff; }
+    .step-indicator.active { background:#2563eb; color:#fff; }
+    .step-indicator.idle   { background:#e2e8f0; color:#64748b; }
+    .file-drop-zone { border:2px dashed #93c5fd; transition: border-color .2s, background .2s; }
+    .file-drop-zone:hover, .file-drop-zone.dragover { border-color:#2563eb; background:#eff6ff; }
+    .score-bar-fill { transition: width 1s ease; }
+    .card-hover { transition: box-shadow .2s, transform .2s; }
+    .card-hover:hover { box-shadow:0 10px 30px rgba(37,99,235,.12); transform:translateY(-2px); }
+    .comp-check:checked + label { background:#eff6ff; border-color:#2563eb; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:#2563eb; cursor:pointer; }
+    input[type=range] { -webkit-appearance:none; height:6px; border-radius:3px; background:#e2e8f0; outline:none; }
+    .tooltip { position:relative; }
+    .tooltip:hover .tooltip-text { display:block; }
+    .tooltip-text { display:none; position:absolute; bottom:125%; left:50%; transform:translateX(-50%); background:#1e293b; color:#fff; padding:6px 10px; border-radius:6px; font-size:11px; white-space:nowrap; z-index:50; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    .fade-in { animation: fadeIn .4s ease forwards; }
+    .badge { display:inline-flex; align-items:center; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:600; }
+    .print-btn { display:none; }
+    @media print {
+      .no-print { display:none !important; }
+      .print-area { display:block !important; }
+      .print-btn { display:inline-block; }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-gradient-to-r from-primary-900 via-primary-800 to-primary-700 text-white shadow-lg no-print">
+  <div class="max-w-6xl mx-auto px-4 py-5 flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-tight">Instrumen Seleksi Tenaga Ahli Konstruksi</h1>
+        <p class="text-primary-200 text-sm">Sistem Penilaian Kelayakan Berbasis Kompetensi & Pengalaman</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 text-sm text-primary-200">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      Sesuai Standar LPJK / BNSP
+    </div>
+  </div>
+</header>
+
+<!-- ===== STEP INDICATOR ===== -->
+<div class="max-w-6xl mx-auto px-4 pt-6 no-print">
+  <div class="flex items-center justify-center gap-0 overflow-x-auto pb-2">
+    <div class="flex items-center" id="step-1-wrap">
+      <div class="step-indicator active w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" id="si-1">1</div>
+      <span class="ml-2 text-sm font-medium text-primary-700 whitespace-nowrap" id="sl-1">Data Diri</span>
+    </div>
+    <div class="w-8 h-0.5 bg-slate-200 mx-2 flex-shrink-0" id="line-1"></div>
+    <div class="flex items-center">
+      <div class="step-indicator idle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" id="si-2">2</div>
+      <span class="ml-2 text-sm font-medium text-slate-400 whitespace-nowrap" id="sl-2">SKK / Sertifikat</span>
+    </div>
+    <div class="w-8 h-0.5 bg-slate-200 mx-2 flex-shrink-0" id="line-2"></div>
+    <div class="flex items-center">
+      <div class="step-indicator idle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" id="si-3">3</div>
+      <span class="ml-2 text-sm font-medium text-slate-400 whitespace-nowrap" id="sl-3">Portofolio</span>
+    </div>
+    <div class="w-8 h-0.5 bg-slate-200 mx-2 flex-shrink-0" id="line-3"></div>
+    <div class="flex items-center">
+      <div class="step-indicator idle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" id="si-4">4</div>
+      <span class="ml-2 text-sm font-medium text-slate-400 whitespace-nowrap" id="sl-4">Kompetensi</span>
+    </div>
+    <div class="w-8 h-0.5 bg-slate-200 mx-2 flex-shrink-0" id="line-4"></div>
+    <div class="flex items-center">
+      <div class="step-indicator idle w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0" id="si-5">5</div>
+      <span class="ml-2 text-sm font-medium text-slate-400 whitespace-nowrap" id="sl-5">Hasil Penilaian</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="max-w-6xl mx-auto px-4 py-6">
+
+  <!-- ========== STEP 1: DATA DIRI ========== -->
+  <section id="page-1" class="fade-in">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6 card-hover">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+          <svg class="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Data Diri Tenaga Ahli</h2>
+          <p class="text-sm text-slate-500">Isi informasi dasar tenaga ahli yang akan dinilai</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Nama Lengkap <span class="text-red-500">*</span></label>
+          <input id="nama" type="text" placeholder="Masukkan nama lengkap" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">No. KTP / NIK <span class="text-red-500">*</span></label>
+          <input id="nik" type="text" maxlength="16" placeholder="16 digit NIK" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Bidang Keahlian <span class="text-red-500">*</span></label>
+          <select id="bidang" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition bg-white">
+            <option value="">-- Pilih Bidang --</option>
+            <option value="sipil">Teknik Sipil</option>
+            <option value="arsitektur">Arsitektur</option>
+            <option value="keduanya">Sipil & Arsitektur</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Jabatan / Posisi</label>
+          <input id="jabatan" type="text" placeholder="Contoh: Project Manager, Site Engineer" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Pendidikan Terakhir</label>
+          <select id="pendidikan" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition bg-white">
+            <option value="">-- Pilih Pendidikan --</option>
+            <option value="d3">D3</option>
+            <option value="s1">S1 / D4</option>
+            <option value="s2">S2</option>
+            <option value="s3">S3</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Tahun Pengalaman Kerja</label>
+          <input id="tahun_kerja" type="number" min="0" max="50" placeholder="Contoh: 10" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Institusi / Perusahaan Saat Ini</label>
+          <input id="institusi" type="text" placeholder="Nama perusahaan atau instansi" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+        </div>
+        <div class="md:col-span-2">
+          <label class="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+          <input id="email" type="email" placeholder="nama@email.com" class="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition" />
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-end">
+      <button onclick="goTo(2)" class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+        Lanjut: SKK / Sertifikat
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== STEP 2: SKK / SERTIFIKAT ========== -->
+  <section id="page-2" class="hidden fade-in">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6 card-hover">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 bg-accent-100 rounded-xl flex items-center justify-center">
+          <svg class="w-5 h-5 text-accent-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">SKK & Sertifikat Kompetensi</h2>
+          <p class="text-sm text-slate-500">Unggah Sertifikat Kompetensi Kerja (SKK) dan sertifikat relevan lainnya</p>
+        </div>
+      </div>
+
+      <!-- Info Box -->
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 flex gap-3">
+        <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div class="text-sm text-blue-700">
+          <p class="font-semibold mb-1">Dokumen yang diterima:</p>
+          <ul class="list-disc list-inside space-y-0.5 text-blue-600">
+            <li>SKK (Sertifikat Kompetensi Kerja) dari LPJK / BNSP</li>
+            <li>Sertifikat Profesi (SP) dari asosiasi profesi terakreditasi</li>
+            <li>Sertifikat Pelatihan teknis yang relevan</li>
+            <li>Sertifikat internasional (PMP, FIDIC, dll.)</li>
+          </ul>
+          <p class="mt-2 text-blue-500">Format: PDF, JPG, PNG. Maks. 5MB per file.</p>
+        </div>
+      </div>
+
+      <!-- Upload Area -->
+      <div id="drop-zone" class="file-drop-zone rounded-xl p-8 text-center cursor-pointer mb-6" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <input type="file" id="file-input" multiple accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleFiles(this.files)" />
+        <div class="flex flex-col items-center gap-3">
+          <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
+            <svg class="w-8 h-8 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          </div>
+          <div>
+            <p class="text-slate-700 font-semibold">Seret & lepas file di sini</p>
+            <p class="text-slate-400 text-sm mt-1">atau klik untuk memilih file</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- File List -->
+      <div id="file-list" class="space-y-3 mb-6"></div>
+
+      <!-- Sertifikat Manual Entry -->
+      <div class="border-t border-slate-100 pt-6">
+        <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Tambah Data Sertifikat Secara Manual
+        </h3>
+        <div id="sertifikat-list">
+          <!-- Rows added dynamically -->
+        </div>
+        <button onclick="addSertifikat()" class="mt-3 flex items-center gap-2 text-primary-600 hover:text-primary-700 text-sm font-semibold border border-primary-200 hover:border-primary-400 rounded-xl px-4 py-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Tambah Sertifikat
+        </button>
+      </div>
+    </div>
+
+    <div class="flex justify-between">
+      <button onclick="goTo(1)" class="border border-slate-300 text-slate-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Kembali
+      </button>
+      <button onclick="goTo(3)" class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+        Lanjut: Portofolio
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== STEP 3: PORTOFOLIO ========== -->
+  <section id="page-3" class="hidden fade-in">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6 card-hover">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Portofolio Proyek</h2>
+          <p class="text-sm text-slate-500">Daftar proyek konstruksi yang pernah dikerjakan</p>
+        </div>
+      </div>
+
+      <div id="portofolio-list" class="space-y-4"></div>
+
+      <button onclick="addPortofolio()" class="mt-4 flex items-center gap-2 text-green-600 hover:text-green-700 text-sm font-semibold border border-green-200 hover:border-green-400 rounded-xl px-4 py-2.5 transition w-full justify-center">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        Tambah Proyek
+      </button>
+    </div>
+
+    <div class="flex justify-between">
+      <button onclick="goTo(2)" class="border border-slate-300 text-slate-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Kembali
+      </button>
+      <button onclick="goTo(4)" class="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+        Lanjut: Kompetensi
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== STEP 4: KOMPETENSI ========== -->
+  <section id="page-4" class="hidden fade-in">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6">
+      <div class="flex items-center gap-3 mb-6">
+        <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+          <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">Penilaian Kompetensi</h2>
+          <p class="text-sm text-slate-500">Centang kompetensi yang dikuasai dan nilai tingkat penguasaannya</p>
+        </div>
+      </div>
+
+      <!-- TAB -->
+      <div class="flex gap-2 mb-6 border-b border-slate-100 pb-3 flex-wrap no-print">
+        <button onclick="switchTab('sipil')" id="tab-sipil" class="tab-btn active px-5 py-2 rounded-xl text-sm font-semibold border border-transparent">
+          🏗️ Teknik Sipil
+        </button>
+        <button onclick="switchTab('arsitektur')" id="tab-arsitektur" class="tab-btn px-5 py-2 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600">
+          🏛️ Arsitektur
+        </button>
+      </div>
+
+      <!-- SIPIL -->
+      <div id="kompetensi-sipil">
+        <!-- Struktur -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-blue-500 inline-block"></span> Rekayasa Struktur
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-struktur"></div>
+        </div>
+        <!-- Geoteknik -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Geoteknik & Pondasi
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-geoteknik"></div>
+        </div>
+        <!-- Manajemen Proyek -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Manajemen Proyek Konstruksi
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-manpro"></div>
+        </div>
+        <!-- SDA -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-500 inline-block"></span> Sumber Daya Air & Transportasi
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-sda"></div>
+        </div>
+      </div>
+
+      <!-- ARSITEKTUR -->
+      <div id="kompetensi-arsitektur" class="hidden">
+        <!-- Desain Bangunan -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span> Desain & Perancangan Bangunan
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-desain"></div>
+        </div>
+        <!-- Lanskap -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-lime-500 inline-block"></span> Arsitektur Lanskap & Eksterior
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-lanskap"></div>
+        </div>
+        <!-- Tata Ruang -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-violet-500 inline-block"></span> Tata Ruang & Perencanaan Kota
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-tataruang"></div>
+        </div>
+        <!-- Teknologi Bangunan -->
+        <div class="mb-6">
+          <h3 class="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span> Teknologi & Material Bangunan
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="grid-teknobangunan"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="flex justify-between">
+      <button onclick="goTo(3)" class="border border-slate-300 text-slate-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Kembali
+      </button>
+      <button onclick="calculateScore()" class="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-8 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2 shadow-lg">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        Hitung Skor Kelayakan
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== STEP 5: HASIL PENILAIAN ========== -->
+  <section id="page-5" class="hidden fade-in">
+    <!-- Verdict Banner -->
+    <div id="verdict-banner" class="rounded-2xl p-6 mb-6 text-center shadow-lg">
+      <div id="verdict-icon" class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4"></div>
+      <h2 id="verdict-title" class="text-2xl font-extrabold mb-1"></h2>
+      <p id="verdict-subtitle" class="text-base opacity-80"></p>
+    </div>
+
+    <!-- Score Summary Cards -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center card-hover">
+        <p class="text-3xl font-extrabold text-primary-600" id="score-total">0</p>
+        <p class="text-xs text-slate-500 mt-1 font-medium">Total Skor</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center card-hover">
+        <p class="text-3xl font-extrabold text-accent-500" id="score-sertifikat">0</p>
+        <p class="text-xs text-slate-500 mt-1 font-medium">Skor Sertifikat</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center card-hover">
+        <p class="text-3xl font-extrabold text-green-500" id="score-portofolio">0</p>
+        <p class="text-xs text-slate-500 mt-1 font-medium">Skor Portofolio</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center card-hover">
+        <p class="text-3xl font-extrabold text-purple-500" id="score-kompetensi">0</p>
+        <p class="text-xs text-slate-500 mt-1 font-medium">Skor Kompetensi</p>
+      </div>
+    </div>
+
+    <!-- Detail Breakdown -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6 card-hover">
+      <h3 class="text-base font-bold text-slate-800 mb-5">Rincian Penilaian</h3>
+
+      <!-- Sertifikat Bar -->
+      <div class="mb-5">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-accent-500 inline-block"></span> Sertifikasi & SKK
+          </span>
+          <span class="text-sm font-bold text-slate-600" id="bar-label-sert">0 / 30</span>
+        </div>
+        <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div id="bar-sert" class="score-bar-fill h-full rounded-full bg-gradient-to-r from-accent-400 to-accent-500" style="width:0%"></div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1" id="detail-sert"></p>
+      </div>
+
+      <!-- Portofolio Bar -->
+      <div class="mb-5">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span> Portofolio Proyek
+          </span>
+          <span class="text-sm font-bold text-slate-600" id="bar-label-porto">0 / 35</span>
+        </div>
+        <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div id="bar-porto" class="score-bar-fill h-full rounded-full bg-gradient-to-r from-green-400 to-green-500" style="width:0%"></div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1" id="detail-porto"></p>
+      </div>
+
+      <!-- Kompetensi Bar -->
+      <div class="mb-5">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-purple-500 inline-block"></span> Kompetensi Teknis
+          </span>
+          <span class="text-sm font-bold text-slate-600" id="bar-label-komp">0 / 35</span>
+        </div>
+        <div class="h-3 bg-slate-100 rounded-full overflow-hidden">
+          <div id="bar-komp" class="score-bar-fill h-full rounded-full bg-gradient-to-r from-purple-400 to-purple-500" style="width:0%"></div>
+        </div>
+        <p class="text-xs text-slate-400 mt-1" id="detail-komp"></p>
+      </div>
+
+      <!-- Threshold -->
+      <div class="mt-4 bg-slate-50 rounded-xl p-4 border border-slate-200">
+        <p class="text-xs font-bold text-slate-600 mb-2">Ambang Batas Kelayakan:</p>
+        <div class="flex gap-4 flex-wrap">
+          <span class="badge bg-green-100 text-green-700">✅ Layak: ≥ 70 poin</span>
+          <span class="badge bg-yellow-100 text-yellow-700">⚠️ Perlu Evaluasi: 50–69 poin</span>
+          <span class="badge bg-red-100 text-red-700">❌ Tidak Layak: &lt; 50 poin</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rekomendasi -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6 card-hover">
+      <h3 class="text-base font-bold text-slate-800 mb-4">Rekomendasi & Catatan</h3>
+      <div id="rekomendasi-list" class="space-y-3"></div>
+    </div>
+
+    <!-- Ringkasan Data -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-6 card-hover">
+      <h3 class="text-base font-bold text-slate-800 mb-4">Ringkasan Data Tenaga Ahli</h3>
+      <div id="ringkasan-data" class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm"></div>
+    </div>
+
+    <!-- ── Simpan & Email Panel ── -->
+    <div class="no-print bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-4">
+      <h3 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        Simpan Hasil &amp; Kirim via Email
+      </h3>
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input id="email-kirim" type="email" placeholder="Masukkan email penerima hasil penilaian..."
+          class="flex-1 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition bg-white" />
+        <button id="btn-simpan" onclick="savePenilaian()"
+          class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-semibold text-sm transition flex items-center gap-2 shadow whitespace-nowrap">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+          💾 Simpan &amp; Kirim Email
+        </button>
+      </div>
+      <div id="save-status"></div>
+      <p class="text-xs text-slate-400 mt-2">Data akan disimpan ke database dan hasil penilaian dikirim ke email yang dimasukkan.</p>
+    </div>
+
+    <!-- ── Admin Dashboard Link ── -->
+    <div class="no-print text-right mb-4">
+      <a href="admin.html" target="_blank" class="text-xs text-slate-400 hover:text-primary-600 underline transition">
+        🔧 Buka Admin Dashboard →
+      </a>
+    </div>
+
+    <div class="flex flex-wrap justify-between gap-3 no-print">
+      <button onclick="goTo(4)" class="border border-slate-300 text-slate-600 hover:bg-slate-50 px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        Kembali &amp; Edit
+      </button>
+      <div class="flex gap-3 flex-wrap">
+        <button onclick="exportWord()" class="bg-primary-600 hover:bg-primary-700 text-white px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2 shadow">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Ekspor Word (.docx)
+        </button>
+        <button onclick="window.print()" class="border border-primary-300 text-primary-600 hover:bg-primary-50 px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+          Cetak / Export PDF
+        </button>
+        <button onclick="resetForm()" class="bg-slate-700 hover:bg-slate-800 text-white px-6 py-3 rounded-xl font-semibold text-sm transition flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Mulai Penilaian Baru
+        </button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer class="mt-12 bg-slate-800 text-slate-400 text-center text-xs py-5 no-print">
+  <p>Instrumen Seleksi Tenaga Ahli Konstruksi &mdash; Sesuai Standar LPJK / BNSP / Permen PUPR</p>
+  <p class="mt-1">Dikembangkan untuk mendukung tata kelola SDM konstruksi yang kompeten dan profesional</p>
+</footer>
+
+<!-- docx.js for Word export -->
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

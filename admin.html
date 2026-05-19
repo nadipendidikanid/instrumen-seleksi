@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Admin Dashboard – Instrumen Seleksi Tenaga Ahli</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','sans-serif']}}}}</script>
+  <style>
+    body{font-family:'Inter',sans-serif;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .fade-in{animation:fadeIn .35s ease forwards;}
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:9999px;font-size:11px;font-weight:700;}
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<!-- HEADER -->
+<header class="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-700 text-white shadow-lg">
+  <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between flex-wrap gap-3">
+    <div class="flex items-center gap-4">
+      <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold">Admin Dashboard – Instrumen Seleksi</h1>
+        <p class="text-slate-400 text-xs">Manajemen Data Penilaian Tenaga Ahli Konstruksi</p>
+      </div>
+    </div>
+    <a href="index.html" class="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-medium transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      Buat Penilaian Baru
+    </a>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-6">
+
+  <!-- STATS -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="stats-row">
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+      <p class="text-3xl font-extrabold text-slate-800" id="stat-total">–</p>
+      <p class="text-xs text-slate-500 mt-1 font-medium">Total Penilaian</p>
+    </div>
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+      <p class="text-3xl font-extrabold text-green-600" id="stat-layak">–</p>
+      <p class="text-xs text-slate-500 mt-1 font-medium">Layak</p>
+    </div>
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+      <p class="text-3xl font-extrabold text-yellow-500" id="stat-evaluasi">–</p>
+      <p class="text-xs text-slate-500 mt-1 font-medium">Perlu Evaluasi</p>
+    </div>
+    <div class="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm text-center">
+      <p class="text-3xl font-extrabold text-red-500" id="stat-tidak">–</p>
+      <p class="text-xs text-slate-500 mt-1 font-medium">Tidak Layak</p>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-3 flex-wrap">
+      <input id="search-input" type="text" placeholder="🔍 Cari nama, NIK, bidang..." oninput="filterTable()" class="border border-slate-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 w-64"/>
+      <select id="filter-status" onchange="filterTable()" class="border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white">
+        <option value="">Semua Status</option>
+        <option value="LAYAK">✅ Layak</option>
+        <option value="PERLU EVALUASI">⚠️ Perlu Evaluasi</option>
+        <option value="TIDAK LAYAK">❌ Tidak Layak</option>
+      </select>
+    </div>
+    <button onclick="loadData()" class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      Refresh
+    </button>
+  </div>
+
+  <!-- TABLE -->
+  <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="bg-slate-800 text-white text-xs uppercase tracking-wide">
+            <th class="px-4 py-3 text-left">ID</th>
+            <th class="px-4 py-3 text-left">Nama</th>
+            <th class="px-4 py-3 text-left">NIK</th>
+            <th class="px-4 py-3 text-left">Bidang</th>
+            <th class="px-4 py-3 text-center">Skor</th>
+            <th class="px-4 py-3 text-center">Status</th>
+            <th class="px-4 py-3 text-left">Email</th>
+            <th class="px-4 py-3 text-left">Tanggal</th>
+            <th class="px-4 py-3 text-center">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td colspan="9" class="text-center py-12 text-slate-400">
+            <svg class="w-10 h-10 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+            <p class="font-medium">Memuat data...</p>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL DETAIL -->
+<div id="modal" class="fixed inset-0 bg-black/50 z-50 hidden items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto fade-in">
+    <div class="flex items-center justify-between p-5 border-b border-slate-100">
+      <h3 class="font-bold text-slate-800 text-base">Detail Penilaian</h3>
+      <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="modal-body" class="p-5"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+  <div id="toast-inner" class="px-5 py-3 rounded-xl shadow-lg text-white text-sm font-semibold flex items-center gap-2"></div>
+</div>
+
+<script>
+const API = '/api';
+let allData = [];
+
+async function loadData() {
+  try {
+    const res  = await fetch(`${API}/data`);
+    const json = await res.json();
+    allData = json.data || [];
+    renderStats(allData);
+    renderTable(allData);
+  } catch(e) {
+    showToast('Gagal memuat data: ' + e.message, 'error');
+  }
+}
+
+function renderStats(data) {
+  document.getElementById('stat-total').textContent    = data.length;
+  document.getElementById('stat-layak').textContent    = data.filter(d => d.status_kelayakan === 'LAYAK').length;
+  document.getElementById('stat-evaluasi').textContent = data.filter(d => d.status_kelayakan === 'PERLU EVALUASI').length;
+  document.getElementById('stat-tidak').textContent    = data.filter(d => d.status_kelayakan === 'TIDAK LAYAK').length;
+}
+
+function renderTable(data) {
+  const tbody = document.getElementById('table-body');
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center py-12 text-slate-400">
+      <svg class="w-10 h-10 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
+      <p class="font-medium">Belum ada data penilaian</p></td></tr>`;
+    return;
+  }
+  const statusBadge = s => {
+    if (s === 'LAYAK')          return '<span class="badge bg-green-100 text-green-700">✅ Layak</span>';
+    if (s === 'PERLU EVALUASI') return '<span class="badge bg-yellow-100 text-yellow-700">⚠️ Evaluasi</span>';
+    return '<span class="badge bg-red-100 text-red-700">❌ Tidak Layak</span>';
+  };
+  tbody.innerHTML = data.map((d, i) => `
+    <tr class="${i%2===0?'bg-white':'bg-slate-50'} hover:bg-blue-50 transition">
+      <td class="px-4 py-3 text-slate-500 font-mono text-xs">#${d.id}</td>
+      <td class="px-4 py-3 font-semibold text-slate-800">${d.nama || '-'}</td>
+      <td class="px-4 py-3 text-slate-500 font-mono text-xs">${d.nik || '-'}</td>
+      <td class="px-4 py-3 text-slate-600">${d.bidang || '-'}</td>
+      <td class="px-4 py-3 text-center">
+        <span class="font-bold text-lg ${d.skor_total>=70?'text-green-600':d.skor_total>=50?'text-yellow-600':'text-red-600'}">${d.skor_total}</span>
+        <span class="text-slate-400 text-xs">/100</span>
+      </td>
+      <td class="px-4 py-3 text-center">${statusBadge(d.status_kelayakan)}</td>
+      <td class="px-4 py-3 text-slate-500 text-xs">${d.email || '-'}</td>
+      <td class="px-4 py-3 text-slate-500 text-xs">${d.tanggal_penilaian || '-'}</td>
+      <td class="px-4 py-3">
+        <div class="flex items-center justify-center gap-1">
+          <button onclick="showDetail(${d.id})" title="Lihat Detail" class="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          </button>
+          ${d.email ? `<button onclick="kirimEmail(${d.id})" title="Kirim Ulang Email" class="p-1.5 rounded-lg bg-green-50 hover:bg-green-100 text-green-600 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </button>` : ''}
+          <button onclick="hapusData(${d.id})" title="Hapus" class="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-500 transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterTable() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const s = document.getElementById('filter-status').value;
+  const filtered = allData.filter(d => {
+    const matchQ = !q || [d.nama,d.nik,d.bidang,d.jabatan,d.institusi].some(v => (v||'').toLowerCase().includes(q));
+    const matchS = !s || d.status_kelayakan === s;
+    return matchQ && matchS;
+  });
+  renderTable(filtered);
+}
+
+async function showDetail(id) {
+  try {
+    const res  = await fetch(`${API}/data/${id}`);
+    const json = await res.json();
+    const d    = json.data;
+    const sertArr  = JSON.parse(d.sertifikat_json  || '[]');
+    const portoArr = JSON.parse(d.portofolio_json  || '[]');
+    const kompObj  = JSON.parse(d.kompetensi_json  || '{}');
+    const recArr   = JSON.parse(d.rekomendasi_json || '[]');
+    const statusColor = d.status_kelayakan==='LAYAK'?'text-green-600 bg-green-50':d.status_kelayakan==='PERLU EVALUASI'?'text-yellow-700 bg-yellow-50':'text-red-600 bg-red-50';
+
+    document.getElementById('modal-body').innerHTML = `
+      <div class="space-y-5">
+        <div class="${statusColor} rounded-xl p-4 text-center">
+          <div class="text-3xl font-black">${d.skor_total} <span class="text-base font-normal">/ 100</span></div>
+          <div class="font-bold text-lg mt-1">${d.status_kelayakan}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-sm">
+          ${[['Nama',d.nama],['NIK',d.nik],['Bidang',d.bidang],['Jabatan',d.jabatan||'-'],['Pendidikan',d.pendidikan||'-'],['Pengalaman',d.tahun_kerja+' tahun'],['Institusi',d.institusi||'-'],['Email',d.email||'-'],['Tanggal',d.tanggal_penilaian]].map(([k,v])=>`<div class="bg-slate-50 rounded-lg p-2"><span class="text-slate-500 block text-xs">${k}</span><span class="font-semibold">${v}</span></div>`).join('')}
+        </div>
+        <div class="grid grid-cols-3 gap-3 text-center text-sm">
+          <div class="bg-orange-50 rounded-xl p-3"><div class="text-xl font-black text-orange-600">${d.skor_sertifikat}</div><div class="text-xs text-orange-700 mt-1">Sertifikasi /30</div></div>
+          <div class="bg-green-50 rounded-xl p-3"><div class="text-xl font-black text-green-600">${d.skor_portofolio}</div><div class="text-xs text-green-700 mt-1">Portofolio /35</div></div>
+          <div class="bg-purple-50 rounded-xl p-3"><div class="text-xl font-black text-purple-600">${d.skor_kompetensi}</div><div class="text-xs text-purple-700 mt-1">Kompetensi /35</div></div>
+        </div>
+        ${sertArr.length ? `<div><p class="text-xs font-bold text-slate-600 mb-2">SERTIFIKAT</p><ul class="text-sm space-y-1">${sertArr.map(s=>`<li class="bg-slate-50 rounded-lg px-3 py-2">📄 <strong>${s.nama}</strong> — ${s.penerbit} (${s.tingkat}, ${s.tahun})</li>`).join('')}</ul></div>` : ''}
+        ${portoArr.length ? `<div><p class="text-xs font-bold text-slate-600 mb-2">PORTOFOLIO</p><ul class="text-sm space-y-1">${portoArr.map(p=>`<li class="bg-slate-50 rounded-lg px-3 py-2">🏢 <strong>${p.nama}</strong> — ${p.peran} | ${p.nilai} | ${p.periode}</li>`).join('')}</ul></div>` : ''}
+        ${(kompObj.sipil||[]).length||(kompObj.arsitektur||[]).length ? `<div><p class="text-xs font-bold text-slate-600 mb-2">KOMPETENSI</p>${(kompObj.sipil||[]).length?`<p class="text-xs text-blue-700 font-semibold mb-1">Sipil:</p><ul class="text-sm space-y-1 mb-2">${(kompObj.sipil||[]).map(k=>`<li class="bg-blue-50 rounded-lg px-3 py-1.5">⚙️ ${k}</li>`).join('')}</ul>`:''}${(kompObj.arsitektur||[]).length?`<p class="text-xs text-purple-700 font-semibold mb-1">Arsitektur:</p><ul class="text-sm space-y-1">${(kompObj.arsitektur||[]).map(k=>`<li class="bg-purple-50 rounded-lg px-3 py-1.5">🏛️ ${k}</li>`).join('')}</ul>`:''}</div>` : ''}
+        ${recArr.length ? `<div><p class="text-xs font-bold text-slate-600 mb-2">REKOMENDASI</p><ul class="text-sm space-y-1">${recArr.map(r=>`<li class="bg-yellow-50 rounded-lg px-3 py-2 text-yellow-800">💡 ${r}</li>`).join('')}</ul></div>` : ''}
+        ${d.email ? `<button onclick="kirimEmail(${d.id})" class="w-full bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Kirim Ulang Email ke ${d.email}
+        </button>` : ''}
+      </div>`;
+    document.getElementById('modal').classList.remove('hidden');
+    document.getElementById('modal').classList.add('flex');
+  } catch(e) {
+    showToast('Gagal memuat detail', 'error');
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.add('hidden');
+  document.getElementById('modal').classList.remove('flex');
+}
+
+async function kirimEmail(id) {
+  showToast('Mengirim email...', 'info');
+  try {
+    const res  = await fetch(`${API}/kirim-email/${id}`, { method:'POST' });
+    const json = await res.json();
+    if (json.success) {
+      showToast('✅ Email berhasil dikirim!', 'success');
+      if (json.previewUrl) {
+        setTimeout(() => { if(confirm('Buka preview email? (Ethereal test)')) window.open(json.previewUrl,'_blank'); }, 500);
+      }
+    } else {
+      showToast('⚠️ ' + json.error, 'error');
+    }
+  } catch(e) {
+    showToast('Gagal kirim email: ' + e.message, 'error');
+  }
+}
+
+async function hapusData(id) {
+  if (!confirm(`Hapus data penilaian #${id}?`)) return;
+  try {
+    await fetch(`${API}/data/${id}`, { method:'DELETE' });
+    showToast('Data berhasil dihapus', 'success');
+    loadData();
+  } catch(e) {
+    showToast('Gagal hapus data', 'error');
+  }
+}
+
+function showToast(msg, type='success') {
+  const t  = document.getElementById('toast');
+  const ti = document.getElementById('toast-inner');
+  const colors = { success:'bg-green-600', error:'bg-red-600', info:'bg-blue-600' };
+  ti.className = `px-5 py-3 rounded-xl shadow-lg text-white text-sm font-semibold flex items-center gap-2 ${colors[type]||'bg-slate-700'}`;
+  ti.textContent = msg;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3500);
+}
+
+document.getElementById('modal').addEventListener('click', e => { if(e.target===document.getElementById('modal')) closeModal(); });
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>
